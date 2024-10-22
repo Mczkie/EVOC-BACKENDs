@@ -119,6 +119,30 @@ app.post('/api/newannouncements', (req, res) => {
     });
   });
 
+  app.post('/api/newreports', (req, res) => {
+    const { title, description } = req.body;
+    const insertQuery = "INSERT INTO `reports`(`title`, `description`,`status`) VALUES (?,?,'Active')";
+  
+    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+        if (insertError) {
+            console.error("Database query error", insertError);
+            return insertResults
+              .status(500)
+              .send({ message: "Database query  failed", error: insertError });
+        }
+  
+      // Fetch the inserted row
+      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE id = ?";
+      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+        if (fetchError) {
+          return res.status(500).json({ message: fetchError.message });
+        }
+        res.status(200).json(fetchResults[0]); // Return the inserted record
+      });
+    });
+  });
+
+
 app.get("/api/users", (req, res) => {
     connection.query("SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE status ='Active';", (err, results) => {
     if (err) throw err;
