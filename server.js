@@ -1,14 +1,53 @@
 const express = require("express");
 const mysql = require("mysql");
 const app = express();
-const port = 3000;
+const port = 5000;
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+// CORS configuration
+const corsOptions = {
+    origin: 'http://localhost:3000', // Allow requests from this origin
+    methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type'], // Allowed headers
+    credentials: true, // Allow credentials if needed
+};
+
+app.use(cors(corsOptions)); // Enable CORS with options
+app.use(bodyParser.json());
+
+// Handle OPTIONS method for preflight
+app.options('*', cors(corsOptions)); // Preflight response for all routes
+
+
+// app.use((req, res, next) => {
+//     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins
+//     res.header('Access-Control-Allow-Methods', 'GET, POST'); // Allowed methods
+//     res.header('Access-Control-Allow-Headers', 'Content-Type'); // Allowed headers
+//     next();
+// });
+
+// app.use(
+//     cors({
+//       // origin: 'http://localhost:3000',
+//       // methods: ['GET', 'POST']
+//       origin: true,
+//       credentials: true,
+//     })
+//   );
+// app.use(cors({
+//     origin: 'http://example.com', // Replace with your client's origin
+//     methods: ['GET', 'POST'], // Allowed HTTP methods
+//     allowedHeaders: ['Content-Type'], // Allowed headers
+// }));
 
 // MySQL connection
 const connection = mysql.createConnection({
 host: "localhost",
 user: "root",
 password: "",
-database: "evocapp_admin"
+database: "evocapp_admin",
+multipleStatements: true
 });
 
 connection.connect((err) => {
@@ -20,11 +59,83 @@ app.use(express.json());
 
 // Define a route
 app.get("/api/data", (req, res) => {
-connection.query("SELECT * FROM admin", (err, results) => {
-if (err) throw err;
-res.json(results);
+    connection.query("SELECT * FROM admin", (err, results) => {
+    if (err) throw err;
+        res.json(results);
+    });
 });
+
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    // const user = users.find(u => u.username === username && u.password === password);
+    connection.query(
+        "SELECT * FROM admin WHERE email = ? AND password = ?",
+        [email, password],
+        (err, results) => {
+          if (err) {
+            console.error("Database query error", err);
+            return res
+              .status(500)
+              .send({ message: "Database query  failed", error: err });
+          }
+          if (results.length > 0) {
+            res.status(200).send({ message: "Login successful!" });
+          } else {
+            res.status(401).send({ message: "Check Credentials" });
+          }
+        }
+      );
 });
+
+// 
+
+app.get("/api/announcements", (req, res) => {
+    connection.query("SELECT * FROM announcements", (err, results) => {
+    if (err) throw err;
+        res.json(results);
+    });
+});
+
+app.post('/api/newannouncements', (req, res) => {
+    const { title, description } = req.body;
+    const insertQuery = "INSERT INTO `announcements`(`title`, `description`,`status`) VALUES (?,?,'Active')";
+  
+    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+        if (insertError) {
+            console.error("Database query error", insertError);
+            return insertResults
+              .status(500)
+              .send({ message: "Database query  failed", error: insertError });
+        }
+  
+      // Fetch the inserted row
+      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` WHERE id = ?";
+      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+        if (fetchError) {
+          return res.status(500).json({ message: fetchError.message });
+        }
+        res.status(200).json(fetchResults[0]); // Return the inserted record
+      });
+    });
+  });
+
+app.get("/api/users", (req, res) => {
+    connection.query("SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE status ='Active';", (err, results) => {
+    if (err) throw err;
+        res.json(results);
+    });
+});
+
+app.get("/api/reports", (req, res) => {
+    connection.query("SELECT * FROM reports", (err, results) => {
+    if (err) throw err;
+        res.json(results);
+    });
+});
+
+
+
+
 
 app.listen(port, () => {
 console.log(`Server running at http://localhost:${port}`);
