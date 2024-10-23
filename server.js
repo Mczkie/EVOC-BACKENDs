@@ -90,10 +90,47 @@ app.post('/api/login', (req, res) => {
 // 
 
 app.get("/api/announcements", (req, res) => {
-    connection.query("SELECT * FROM announcements", (err, results) => {
+    connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
     if (err) throw err;
         res.json(results);
     });
+});
+
+app.get("/api/reports", (req, res) => {
+  connection.query("SELECT * FROM reports", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
+
+app.get("/api/collection-schedule", (req, res) => {
+  connection.query("SELECT * FROM collection_sched", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
+
+app.post('/api/newcollection-schedule', (req, res) => {
+  const { location, collection_date } = req.body;
+  const insertQuery = "INSERT INTO `collection_sched`(`location`, `collection_date`,`status`) VALUES (?,?,'Active')";
+
+  connection.query(insertQuery, [ location, collection_date ], (insertError, insertResults) => {
+      if (insertError) {
+          console.error("Database query error", insertError);
+          return insertResults
+            .status(500)
+            .send({ message: "Database query  failed", error: insertError });
+      }
+
+    // Fetch the inserted row
+    const fetchQuery = "SELECT * FROM collection_sched WHERE id = ?";
+    connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the inserted record
+    });
+  });
 });
 
 app.post('/api/newannouncements', (req, res) => {
@@ -150,12 +187,7 @@ app.get("/api/users", (req, res) => {
     });
 });
 
-app.get("/api/reports", (req, res) => {
-    connection.query("SELECT * FROM reports", (err, results) => {
-    if (err) throw err;
-        res.json(results);
-    });
-});
+
 
 
 
