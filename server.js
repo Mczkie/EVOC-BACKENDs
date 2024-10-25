@@ -7,11 +7,16 @@ const cors = require('cors');
 
 // CORS configuration
 const corsOptions = {
-    origin: 'http://localhost:3000', // Allow requests from this origin
+    // origin: 'http://localhost:3000', // Allow requests from this origin
     methods: ['GET', 'POST', 'OPTIONS'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type'], // Allowed headers
     credentials: true, // Allow credentials if needed
 };
+
+
+app.use(cors({
+  // origin: 'http://localhost:5000', // Change to your Flutter app's URL
+}));
 
 app.use(cors(corsOptions)); // Enable CORS with options
 app.use(bodyParser.json());
@@ -147,6 +152,29 @@ app.post('/api/newannouncements', (req, res) => {
   
       // Fetch the inserted row
       const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` WHERE id = ?";
+      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+        if (fetchError) {
+          return res.status(500).json({ message: fetchError.message });
+        }
+        res.status(200).json(fetchResults[0]); // Return the inserted record
+      });
+    });
+  });
+
+  app.post('/api/newreports', (req, res) => {
+    const { title, description } = req.body;
+    const insertQuery = "INSERT INTO `reports`(`title`, `description`,`status`) VALUES (?,?,'Active')";
+  
+    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+        if (insertError) {
+            console.error("Database query error", insertError);
+            return insertResults
+              .status(500)
+              .send({ message: "Database query  failed", error: insertError });
+        }
+  
+      // Fetch the inserted row
+      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE id = ?";
       connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
         if (fetchError) {
           return res.status(500).json({ message: fetchError.message });
