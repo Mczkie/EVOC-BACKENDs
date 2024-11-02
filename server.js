@@ -184,21 +184,27 @@ app.post('/api/newannouncements', (req, res) => {
     });
   });
 
-  app.post('/api/newreports', (req, res) => {
-    const { title, description } = req.body;
-    const insertQuery = "INSERT INTO `reports`(`title`, `description`,`status`) VALUES (?,?,'Active')";
-  
-    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+  app.post('/api/updateStatus', (req, res) => {
+    const { email, isLoggedIn } = req.body;
+    console.log(req.body)
+    const insertQuery = "UPDATE `users` SET `isLoggedIn`=? where email = ?";
+
+    connection.query(insertQuery, [ isLoggedIn,email ], (insertError, insertResults) => {
+      console.log(insertError)
+      console.log(insertQuery)
+
         if (insertError) {
             console.error("Database query error", insertError);
             return insertResults
               .status(500)
               .send({ message: "Database query  failed", error: insertError });
         }
+
+        console.log(insertResults)
   
       // Fetch the inserted row
-      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE id = ?";
-      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+      const fetchQuery = "SELECT `id`, `email`, `password`, `isLoggedIn`, `role`, `time_stamp`, `status` FROM `users` WHERE email = ?";
+      connection.query(fetchQuery, [email], (fetchError, fetchResults) => {
         if (fetchError) {
           return res.status(500).json({ message: fetchError.message });
         }
@@ -209,15 +215,84 @@ app.post('/api/newannouncements', (req, res) => {
 
 
 app.get("/api/users", (req, res) => {
-    connection.query("SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE status ='Active';", (err, results) => {
+    connection.query("SELECT `id`, `email`, `password`, `isLoggedIn`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE status ='Active';", (err, results) => {
     if (err) throw err;
         res.json(results);
     });
 });
 
+app.post("/api/userInfo", (req, res) => {
+  const { email, password } = req.body;
+  const fetchQuery = "SELECT `id`, `email`, `password`, `isLoggedIn`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE email = '" + email +"'";
+    //  console.log(fetchQuery)
+  connection.query(fetchQuery,[email], (fetchError, fetchResults) => {
+        if (fetchError) {
+          return res.status(500).json({ message: fetchError.message });
+        }
+        res.status(200).json(fetchResults); 
+      });
+});
+
+app.post('/api/userlogin', (req, res) => {
+  const { email, password } = req.body;
+  // const user = users.find(u => u.username === username && u.password === password);
+  connection.query(
+      "SELECT * FROM users WHERE email = ? AND password = ?",
+      [email, password],
+      (err, results) => {
+        if (err) {
+          console.error("Database query error", err);
+          return res
+            .status(500)
+            .send({ message: "Database query  failed", error: err });
+        }
+        if (results.length > 0) {
+          res.status(200).send({ message: "Login successful!" });
+        } else {
+          res.status(401).send({ message: "Check Credentials" });
+        }
+      }
+    );
+});
+
+// insertUser
+app.post("/api/insertUser", (req, res) => {
+    const { email, password } = req.body;
+
+    const insertQuery = "INSERT INTO `users`(`email`, `password`, `role`, `status`) VALUES (?,?,'user','Active')";
+    connection.query(insertQuery, [email, password], (insertError, insertResults) => {
+        if (insertError) {
+            console.error("Database query error", insertError);
+            return insertResults
+              .status(500)
+              .send({ message: "Database query  failed", error: insertError });
+        }
+  
+      // Fetch the inserted row
+      const fetchQuery = "SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE id = ?";
+      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+        if (fetchError) {
+          return res.status(500).json({ message: fetchError.message });
+        }
+        res.status(200).json(fetchResults[0]); // Return the inserted record
+      });
+    });
+});
+
+app.post("/api/allreports", (req, res) => {
+  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y') as eventDate, `status` FROM `reports`", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
 
 
-
+app.post("/api/uniqueDateReports", (req, res) => {
+  connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%M %d,%Y')) as eventDate FROM reports;", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
 
 
 
