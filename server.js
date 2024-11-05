@@ -269,7 +269,7 @@ app.post("/api/insertUser", (req, res) => {
         }
   
       // Fetch the inserted row
-      const fetchQuery = "SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE id = ?";
+      const fetchQuery = "SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%b %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE id = ? and status='Active'";
       connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
         if (fetchError) {
           return res.status(500).json({ message: fetchError.message });
@@ -280,7 +280,7 @@ app.post("/api/insertUser", (req, res) => {
 });
 
 app.post("/api/allreports", (req, res) => {
-  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y') as eventDate, `status` FROM `reports`", (err, results) => {
+  connection.query("SELECT `id`, `title`, `description` as note, DATE_FORMAT(time_stamp,'%b %d,%Y') as eventDate, `status` FROM `reports` where status='Active'", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
@@ -288,7 +288,7 @@ app.post("/api/allreports", (req, res) => {
 
 
 app.post("/api/uniqueDateReports", (req, res) => {
-  connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%M %d,%Y')) as eventDate FROM reports;", (err, results) => {
+  connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%b %d,%Y')) as eventDate FROM reports where status='Active';", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
