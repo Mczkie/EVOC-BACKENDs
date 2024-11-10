@@ -101,6 +101,63 @@ app.get("/api/announcements", (req, res) => {
     });
 });
 
+app.post("/api/allannouncements", (req, res) => {
+  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
+
+app.post('/api/newannouncements', (req, res) => {
+  const { title, description } = req.body;
+  const insertQuery = "INSERT INTO `announcements`(`title`, `description`,`status`) VALUES (?,?,'Active')";
+
+  connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+      if (insertError) {
+          console.error("Database query error", insertError);
+          return insertResults
+            .status(500)
+            .send({ message: "Database query  failed", error: insertError });
+      }
+
+    // Fetch the inserted row
+    const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` WHERE id = ?";
+    connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the inserted record
+    });
+  });
+});
+
+app.post('/api/updateannouncements', (req, res) => {
+  const { title, description, status, oldTitle, oldDesc } = req.body;
+  console.log(req.body)
+  const updateQuery = "Update `announcements` SET `title` = ? ,`description` = ? ,`status` = ? where title = ? and description = ?";
+  
+  connection.query(updateQuery, [title, description, status, oldTitle, oldDesc], (updateError, updateResults) => {
+    console.log(updateResults)
+      if (updateError) {
+          console.error("Database query error", updateError);
+          return insertResults
+            .status(500)
+            .send({ message: "Database query  failed", error: updateError});
+      }
+
+    // Fetch the update row
+    const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` WHERE title = ? and description = ? and status = 'Active'";
+    connection.query(fetchQuery, [title, description], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the update record
+    });
+  });
+});
+
+
+
 app.get("/api/reports", (req, res) => {
   connection.query("SELECT * FROM reports", (err, results) => {
   if (err) throw err;
@@ -108,14 +165,80 @@ app.get("/api/reports", (req, res) => {
   });
 });
 
-app.get("/api/collection-schedule", (req, res) => {
+app.post("/api/allreports", (req, res) => {
+  connection.query("SELECT `id`, `title`, `description` as note, DATE_FORMAT(time_stamp,'%b %d,%Y') as eventDate, `status` FROM `reports` where status='Active'", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
+
+app.post('/api/newreports', (req, res) => {
+  const { title, description } = req.body;
+  const insertQuery = "INSERT INTO `reports`(`title`, `description`,`status`) VALUES (?,?,'Active')";
+
+  connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
+      if (insertError) {
+          console.error("Database query error", insertError);
+          return insertResults
+            .status(500)
+            .send({ message: "Database query  failed", error: insertError });
+      }
+
+    // Fetch the inserted row
+    const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE id = ?";
+    connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the inserted record
+    });
+  });
+});
+
+app.post('/api/updatereports', (req, res) => {
+  const { title, description, status, oldTitle, oldDesc } = req.body;
+  console.log(req.body)
+  const updateQuery = "Update `reports` SET `title` = ? ,`description` = ? ,`status` = ? where title = ? and description = ?";
+  
+  connection.query(updateQuery, [title, description, status, oldTitle, oldDesc], (updateError, updateResults) => {
+    console.log(updateResults)
+      if (updateError) {
+          console.error("Database query error", updateError);
+          return insertResults
+            .status(500)
+            .send({ message: "Database query  failed", error: updateError});
+      }
+
+    // Fetch the update row
+    const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE title = ? and description = ? and status = 'Active'";
+    connection.query(fetchQuery, [title, description], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the update record
+    });
+  });
+});
+
+
+
+
+app.get("/api/collectionschedule", (req, res) => {
   connection.query("SELECT * FROM collection_sched", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
 });
 
-app.post('/api/newcollection-schedule', (req, res) => {
+app.post("/api/allcollectionschedule", (req, res) => {
+  connection.query("SELECT * FROM collection_sched where status = 'Active'", (err, results) => {
+  if (err) throw err;
+      res.json(results);
+  });
+});
+
+
+app.post('/api/newcollectionschedule', (req, res) => {
   const { location, collection_date } = req.body;
   const insertQuery = "INSERT INTO `collection_sched`(`location`, `collection_date`,`status`) VALUES (?,?,'Active')";
 
@@ -138,70 +261,19 @@ app.post('/api/newcollection-schedule', (req, res) => {
   });
 });
 
-app.post('/api/newannouncements', (req, res) => {
-    const { title, description } = req.body;
-    const insertQuery = "INSERT INTO `announcements`(`title`, `description`,`status`) VALUES (?,?,'Active')";
-  
-    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
-        if (insertError) {
-            console.error("Database query error", insertError);
-            return insertResults
-              .status(500)
-              .send({ message: "Database query  failed", error: insertError });
-        }
-  
-      // Fetch the inserted row
-      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` WHERE id = ?";
-      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
-        if (fetchError) {
-          return res.status(500).json({ message: fetchError.message });
-        }
-        res.status(200).json(fetchResults[0]); // Return the inserted record
-      });
-    });
-  });
-
-  app.post('/api/newreports', (req, res) => {
-    const { title, description } = req.body;
-    const insertQuery = "INSERT INTO `reports`(`title`, `description`,`status`) VALUES (?,?,'Active')";
-  
-    connection.query(insertQuery, [title, description ], (insertError, insertResults) => {
-        if (insertError) {
-            console.error("Database query error", insertError);
-            return insertResults
-              .status(500)
-              .send({ message: "Database query  failed", error: insertError });
-        }
-  
-      // Fetch the inserted row
-      const fetchQuery = "SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `reports` WHERE id = ?";
-      connection.query(fetchQuery, [insertResults.insertId], (fetchError, fetchResults) => {
-        if (fetchError) {
-          return res.status(500).json({ message: fetchError.message });
-        }
-        res.status(200).json(fetchResults[0]); // Return the inserted record
-      });
-    });
-  });
-
   app.post('/api/updateStatus', (req, res) => {
     const { email, isLoggedIn } = req.body;
     console.log(req.body)
     const insertQuery = "UPDATE `users` SET `isLoggedIn`=? where email = ?";
 
     connection.query(insertQuery, [ isLoggedIn,email ], (insertError, insertResults) => {
-      console.log(insertError)
-      console.log(insertQuery)
-
         if (insertError) {
             console.error("Database query error", insertError);
             return insertResults
               .status(500)
               .send({ message: "Database query  failed", error: insertError });
         }
-
-        console.log(insertResults)
-  
+          
       // Fetch the inserted row
       const fetchQuery = "SELECT `id`, `email`, `password`, `isLoggedIn`, `role`, `time_stamp`, `status` FROM `users` WHERE email = ?";
       connection.query(fetchQuery, [email], (fetchError, fetchResults) => {
@@ -277,13 +349,6 @@ app.post("/api/insertUser", (req, res) => {
         res.status(200).json(fetchResults[0]); // Return the inserted record
       });
     });
-});
-
-app.post("/api/allreports", (req, res) => {
-  connection.query("SELECT `id`, `title`, `description` as note, DATE_FORMAT(time_stamp,'%b %d,%Y') as eventDate, `status` FROM `reports` where status='Active'", (err, results) => {
-  if (err) throw err;
-      res.json(results);
-  });
 });
 
 
