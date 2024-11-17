@@ -287,7 +287,7 @@ app.post('/api/newcollectionschedule', (req, res) => {
 
 
 app.get("/api/users", (req, res) => {
-    connection.query("SELECT `id`, `email`, `password`, `isLoggedIn`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE status ='Active';", (err, results) => {
+    connection.query("SELECT `id`, `email`, `password`, `isLoggedIn`, `role`,DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `users` ", (err, results) => {
     if (err) throw err;
         res.json(results);
     });
@@ -351,6 +351,29 @@ app.post("/api/insertUser", (req, res) => {
     });
 });
 
+app.post("/api/updateUser", (req, res) => {
+  const { email, password, status } = req.body;
+
+  const updateQuery = "UPDATE `users` SET `password`=?, `status`=? WHERE email = ?";
+  connection.query(updateQuery, [ password, status, email], (updateError, updateResults) => {
+      if (updateError) {
+          console.error("Database query error", updateError);
+          return updateResults
+            .status(500)
+            .send({ message: "Database query  failed", error: updateError });
+      }
+
+    // Fetch the inserted row
+    const fetchQuery = "SELECT `id`, `email`, `role`,DATE_FORMAT(time_stamp,'%b %d,%Y %r') as `time_stamp`, `status` FROM `users` WHERE email = ? ";
+    connection.query(fetchQuery, [email], (fetchError, fetchResults) => {
+      if (fetchError) {
+        return res.status(500).json({ message: fetchError.message });
+      }
+      res.status(200).json(fetchResults[0]); // Return the inserted record
+    });
+  });
+});
+
 
 app.post("/api/uniqueDateReports", (req, res) => {
   connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%b %d,%Y')) as eventDate FROM reports where status='Active';", (err, results) => {
@@ -358,7 +381,6 @@ app.post("/api/uniqueDateReports", (req, res) => {
       res.json(results);
   });
 });
-
 
 
 app.listen(port, () => {
