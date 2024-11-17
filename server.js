@@ -376,7 +376,7 @@ app.post("/api/updateUser", (req, res) => {
 
 
 app.post("/api/uniqueDateReports", (req, res) => {
-  connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%b %d,%Y')) as eventDate FROM reports where status='Active';", (err, results) => {
+  connection.query("SELECT DISTINCT(DATE_FORMAT(time_stamp,'%b %d,%Y')) as eventDate FROM announcements where status='Active';", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
