@@ -102,7 +102,7 @@ app.get("/api/announcements", (req, res) => {
 });
 
 app.post("/api/allannouncements", (req, res) => {
-  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
+  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
