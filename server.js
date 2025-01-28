@@ -95,14 +95,14 @@ app.post('/api/login', (req, res) => {
 // 
 
 app.get("/api/announcements", (req, res) => {
-    connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
+    connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by id desc", (err, results) => {
     if (err) throw err;
         res.json(results);
     });
 });
 
 app.post("/api/allannouncements", (req, res) => {
-  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by time_stamp desc", (err, results) => {
+  connection.query("SELECT `id`, `title`, `description`, DATE_FORMAT(time_stamp,'%M %d,%Y %r') as `time_stamp`, `status` FROM `announcements` order by id desc", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
@@ -166,14 +166,14 @@ app.post('/api/updateannouncements', (req, res) => {
 
 
 app.get("/api/reports", (req, res) => {
-  connection.query("SELECT * FROM reports", (err, results) => {
+  connection.query("SELECT * FROM reports order by id desc", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
 });
 
 app.post("/api/allreports", (req, res) => {
-  connection.query("SELECT `id`, `title`, `description` as note, DATE_FORMAT(time_stamp,'%b %d,%Y') as eventDate, `status` FROM `reports` where status='Active'", (err, results) => {
+  connection.query("SELECT `id`, `title`, `description` as note, DATE_FORMAT(time_stamp,'%b %d,%Y') as eventDate, `status` FROM `reports` where status='Active' order by id desc", (err, results) => {
   if (err) throw err;
       res.json(results);
   });
