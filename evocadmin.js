@@ -1,7 +1,9 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
+const sqlite3 = require("sqlite3").verbose();
 const { json } = require("body-parser");
+
 
 const app = express();
 
@@ -18,11 +20,11 @@ app.use(express.json());
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "evocapp_admin",
-  port: 3306, // default MySQL port
+  host: process.env.MYSQL_HOST || "127.0.0.1", // or "my-wpdb" if backend is in Docker
+  user: process.env.MYSQL_USER || "user",
+  password: process.env.MYSQL_PASSWORD || "password",
+  database: process.env.MYSQL_DATABASE || "evocapp_admin",
+  port: process.env.MYSQL_PORT || 3306
 });
 
 db.connect((err) => {
@@ -206,13 +208,12 @@ app.delete("/api/reports", (req, res) => {
 
 // announcements route
 app.get("/api/announcement", (req, res) => {
-  db.query("SELECT * FROM announcement", (err, results) => {
+  const query = "SELECT * FROM announcement ORDER BY time_stamp DESC";
+  db.query(query, (err, results) => {
     if (err) {
-      return res
-        .status(500)
-        .send({ message: "Failed to fetch announcements", error: err });
+      return res.status(500).send({ message: "Failed to fetch announcements", error: err });
     }
-    res.json(results);
+    res.status(200).json(results);
   });
 });
 
@@ -275,16 +276,16 @@ app.get("/api/collection", (req, res) => {
 
 // add collection route
 app.post("/api/collection", (req, res) => {
-  const { location, date } = req.body;
+  const { location, street ,date } = req.body;
 
-  if (!location || !date) {
+  if (!location || !street || !date) {
     return res
       .status(400)
-      .send({ message: "Location, dateare required" });
+      .send({ message: "Location, Street and Date are required" });
   }
 
-  const query = "INSERT INTO collection (location, date) VALUES (?, ?)";
-  db.query(query, [location, date], (err, result) => {
+  const query = "INSERT INTO collection (location, street, date) VALUES (?, ?, ?)";
+  db.query(query, [location, street ,date], (err, result) => {
     if (err) {
       return res
         .status(500)
@@ -294,6 +295,7 @@ app.post("/api/collection", (req, res) => {
     const newCollection = {
       id: result.insertId,
       location,
+      street,
       date,
     };
 
@@ -314,9 +316,100 @@ app.delete("/api/collection", (req, res) => {
   });
 });
 
+// update collection
+app.put("/api/collection/:id", (req, res) => {
+  const { id } = req.params;
+  const { location, street, date } = req.body;
+
+  if (!location || !street || !date) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  const query = "UPDATE collection SET location = ?, street = ?, date = ? WHERE id = ?";
+  db.query(query, [location, street, date, id], (err, result) => {
+    if (err) return res.status(500).json({ message: err.message });
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Record not found" });
+
+    res.json({ id: Number(id), location, street, date });
+  });
+});
 
 
+// Barangay East Bajac-Bajac Api connection
+app.get('/api/barangay/east-bajac-bajac', (req, res) => {
+    const barangayData = {
+        name: "Barangay East Bajac-Bajac",
+        city: "Olongapo City",
+        region: "Central Luzon (Region III)",
+        coordinates: {
+            latitude: 14.8429,
+            longitude: 120.2912
+        },
+        elevation_m: 15.3,
+        postal_code: "2200"
+    };
+    res.json(barangayData);
+});
+
+
+// sqlite connection 
+const mobileDb = new sqlite3.Database("./mobile_users.db", (err) => {
+  if (err) {
+    console.log("SQLite connection error:", err);
+  } else {
+    console.log("SQLite mobile DB connected!");
+  }
+});
+
+// create table if not exists
+mobileDb.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    email TEXT UNIQUE,
+    password TEXT
+  )
+`);
+
+app.get("/api/mobileuser", (req, res) => {
+  mobileDb.all(
+    "SELECT id, name, email FROM users",
+    [],
+    (err, rows) => {
+      if (err) {
+        console.error("SQLite error:", err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    }
+  );
+});
+
+// Node.js: Add this to your server
+app.post("/api/mobileuser", (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Name, Email, Password required" });
+  }
+
+  const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+  mobileDb.run(query, [name, email, password], function(err) {
+    if (err) {
+      return res.status(500).json({ message: err.message });
+    }
+    res.status(201).json({ id: this.lastID, name, email });
+  });
+});
+
+
+
+
+
+
+
+const PORT = process.env.PORT || 5001;
 // Start server
-app.listen(5001, () => {
+app.listen(PORT, () => {
   console.log("Server running on port 5001");
 });

@@ -1,0 +1,39 @@
+networks:
+  evocapp_network:
+     driver: bridge
+
+services:
+  my-wpdb:
+    image: mariadb:10.4.28
+    container_name: evocapp_admin_db
+    restart: always
+    ports:
+      - "3306:3306"          # ✅ Expose correct MySQL port
+    environment:
+      MYSQL_DATABASE: evocapp_admin  # ✅ Use a clear DB name
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - evocapp_network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: evocapp_phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: my-wpdb
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 10000000000
+    depends_on:
+      - my-wpdb
+    networks:
+      - evocapp_network
+
+volumes:
+  db_data: {}
