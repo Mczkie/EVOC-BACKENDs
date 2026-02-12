@@ -9,7 +9,7 @@ const app = express();
 // CORS
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://your-react.onrender.com"],
+    origin: ["http://localhost:3000", "ecovistaolongapocity.vercel.app"],
     credentials: true,
   })
 );
