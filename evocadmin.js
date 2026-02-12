@@ -1,7 +1,8 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
-const sqlite3 = require("sqlite3").verbose();
+const Database = require('better-sqlite3');
+const mobileDb = new Database('./mobile_users.db');
 const http = require("http");
 const { json } = require("body-parser");
 
@@ -357,54 +358,31 @@ app.get('/api/barangay/east-bajac-bajac', (req, res) => {
 
 
 // sqlite connection 
-const mobileDb = new sqlite3.Database("./mobile_users.db", (err) => {
-  if (err) {
-    console.log("SQLite connection error:", err);
-  } else {
-    console.log("SQLite mobile DB connected!");
+app.get("/api/mobileuser", (req, res) => {
+  try {
+    const rows = mobileDb.prepare("SELECT id, name, email FROM users").all();
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
-// create table if not exists
-mobileDb.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT UNIQUE,
-    password TEXT
-  )
-`);
-
-app.get("/api/mobileuser", (req, res) => {
-  mobileDb.all(
-    "SELECT id, name, email FROM users",
-    [],
-    (err, rows) => {
-      if (err) {
-        console.error("SQLite error:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      res.json(rows);
-    }
-  );
-});
-
-// Node.js: Add this to your server
+// Add a user
 app.post("/api/mobileuser", (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ message: "Name, Email, Password required" });
   }
 
-  const query = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-  mobileDb.run(query, [name, email, password], function(err) {
-    if (err) {
-      return res.status(500).json({ message: err.message });
-    }
-    res.status(201).json({ id: this.lastID, name, email });
-  });
+  try {
+    const stmt = mobileDb.prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+    const info = stmt.run(name, email, password);
+    res.status(201).json({ id: info.lastInsertRowid, name, email });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
-
 
 
 
