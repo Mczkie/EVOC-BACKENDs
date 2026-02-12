@@ -3,7 +3,6 @@ const mysql = require("mysql");
 const cors = require("cors");
 const Database = require('better-sqlite3');
 const mobileDb = new Database('./mobile_users.db');
-const http = require("http");
 const { json } = require("body-parser");
 
 const app = express();
@@ -24,11 +23,11 @@ app.use(express.json());
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST || "127.0.0.1", // or "my-wpdb" if backend is in Docker
-  user: process.env.MYSQL_USER || "user",
-  password: process.env.MYSQL_PASSWORD || "password",
-  database: process.env.MYSQL_DATABASE || "evocapp_admin",
-  port: process.env.MYSQL_PORT || 3306
+  host: process.env.MYSQL_HOST, // or "my-wpdb" if backend is in Docker
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  port: process.env.MYSQL_PORT
 });
 
 db.connect((err) => {
