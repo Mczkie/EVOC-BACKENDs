@@ -1,8 +1,8 @@
 const express = require("express");
-const mysql = require("mysql");
 const cors = require("cors");
 const Database = require('better-sqlite3');
 const mobileDb = new Database('./api/mobile_users.db');
+const { Pool } = require("pg");
 const { json } = require("body-parser");
 
 const app = express();
@@ -32,20 +32,21 @@ app.use(
 app.use(express.json());
 
 // MySQL connection
-const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST || "127.0.0.1", // or "my-wpdb" if backend is in Docker
-  user: process.env.MYSQL_USER || "user",
-  password: process.env.MYSQL_PASSWORD || "password",
-  database: process.env.MYSQL_DATABASE || "evocapp_admin",
-  port: process.env.MYSQL_PORT || 3306,
+const pool = new Pool({
+  host: process.env.PGHOST || "dpg-d6k3br9aae7s7388rro0-a", // e.g., evocapp-postgres.onrender.com
+  user: process.env.PGUSER || "evocdatabase_postgres_user",
+  password: process.env.PGPASSWORD || "sKI0CTPWsSxfDXLohMBIPkmyKIHg3caP",
+  database: process.env.PGDATABASE || "evocdatabase_postgres",
+  port: process.env.PGPORT || 5432, // PostgreSQL default port
 });
 
-db.connect((err) => {
+// Test connection
+pool.connect((err, client, release) => {
   if (err) {
-    console.log("Database connection error:", err);
-  } else {
-    console.log("Database connected successfully!");
+    return console.error('Postgres connection error', err.stack);
   }
+  console.log('Postgres connected successfully!');
+  release();
 });
 
 // LOGIN route
