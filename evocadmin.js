@@ -8,9 +8,22 @@ const { json } = require("body-parser");
 const app = express();
 
 // CORS
+const allowedOrigins = [
+  "http://localhost:3000", // local dev
+  "https://evocadmins-ht3awl35v-mc-peterson-mercaders-projects.vercel.app" // deployed React
+];
+
 app.use(
   cors({
-    origin: "http://localhost:3000", // React app
+    origin: function (origin, callback) {
+      // allow requests with no origin (like Postman or server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = "The CORS policy for this site does not allow access from the specified Origin.";
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -36,7 +49,7 @@ db.connect((err) => {
 });
 
 // LOGIN route
-app.post("/api/login", (req, res) => {
+app.post("https://evoc-backends.onrender.com/api/login", (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -62,7 +75,7 @@ app.post("/api/login", (req, res) => {
 });
 
 // Dashboard route
-app.get("/Dashboard", (req, res) => {
+app.get("https://evoc-backends.onrender.com/Dashboard", (req, res) => {
   db.query(
     "SELECT * FROM admin WHERE email = ? AND password = ?",
     [email, password],
@@ -82,7 +95,7 @@ app.get("/Dashboard", (req, res) => {
 });
 
 // logout route
-app.post("/logout", (req, res) => {
+app.post("https://evoc-backends.onrender.com/api/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Error destroying session", err);
@@ -93,7 +106,7 @@ app.post("/logout", (req, res) => {
 });
 
 // add new users
-app.post("/api/admin", (req, res) => {
+app.post("https://evoc-backends.onrender.com/api/admin", (req, res) => {
   const { name, email, password, role } = req.body;
 
   if (!name || !email || !password, !role) {
