@@ -448,6 +448,47 @@ app.post("/api/mobileuser", (req, res) => {
   }
 })();
 
+// TEMP: create missing tables
+(async () => {
+  try {
+    // Reports table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reports (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL
+      )
+    `);
+    console.log("Reports table ensured");
+
+    // Collection table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS collection (
+        id SERIAL PRIMARY KEY,
+        location VARCHAR(255) NOT NULL,
+        street VARCHAR(255) NOT NULL,
+        date DATE NOT NULL
+      )
+    `);
+    console.log("Collection table ensured");
+
+    // Announcement table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS announcement (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT NOT NULL,
+        time_stamp TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log("Announcement table ensured");
+
+    console.log("All missing tables created/verified!");
+  } catch (err) {
+    console.error("Error creating tables:", err);
+  }
+})();
+
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
