@@ -35,5 +35,21 @@ services:
     networks:
       - evocapp_network
 
+  backend:
+    build: .
+    container_name: evocapp_backend
+    ports:
+      - "5001:5001"
+    environment:
+      MYSQL_HOST: my-wpdb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: evocapp_admin
+      MYSQL_PORT: 3306
+    depends_on:
+      - my-wpdb
+    networks:
+      - evocapp_network
+
 volumes:
   db_data: {}

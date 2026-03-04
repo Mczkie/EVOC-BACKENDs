@@ -8,9 +8,6 @@ const { json } = require("body-parser");
 
 const app = express();
 
-
-
-
 // CORS
 app.use(
   cors({
@@ -24,11 +21,11 @@ app.use(express.json());
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST || "127.0.0.1", // or "my-wpdb" if backend is in Docker
+  host: process.env.MYSQL_HOST || "my-wpdb", // or "my-wpdb" if backend is in Docker
   user: process.env.MYSQL_USER || "user",
   password: process.env.MYSQL_PASSWORD || "password",
   database: process.env.MYSQL_DATABASE || "evocapp_admin",
-  port: process.env.MYSQL_PORT || 3306
+  port: process.env.MYSQL_PORT || 3306,
 });
 
 db.connect((err) => {
@@ -389,8 +386,5 @@ app.post("/api/mobileuser", (req, res) => {
 
 
 
-const PORT = process.env.PORT || 5001;
-// Start server
-app.listen(PORT, () => {
-  console.log("Server running on port 5001");
-});
+const serverless = require("serverless-http");
+module.exports.handler = serverless(app);
