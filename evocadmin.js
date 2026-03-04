@@ -1,9 +1,9 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
-const { json } = require("body-parser");
 const Database = require('better-sqlite3');
-const mobileDb = new Database('./api/mobileusers.db');
+const mobileDb = new Database('./api/mobile_users.db');
+const { json } = require("body-parser");
 
 const app = express();
 
@@ -20,7 +20,7 @@ app.use(express.json());
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST || "my-wpdb", // or "my-wpdb" if backend is in Docker
+  host: process.env.MYSQL_HOST || "127.0.0.1", // or "my-wpdb" if backend is in Docker
   user: process.env.MYSQL_USER || "user",
   password: process.env.MYSQL_PASSWORD || "password",
   database: process.env.MYSQL_DATABASE || "evocapp_admin",
@@ -381,10 +381,7 @@ app.post("/api/mobileuser", (req, res) => {
 });
 
 
-
-
-
-
-const serverless = require("serverless-http");
-module.exports.handler = serverless(app);
-
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
