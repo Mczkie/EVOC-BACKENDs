@@ -5,6 +5,7 @@ const Database = require('better-sqlite3');
 const mobileDb = new Database('./mobile_users.db');
 const http = require("http");
 const { json } = require("body-parser");
+const serverless = require("serverless-http");
 
 const app = express();
 
