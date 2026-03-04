@@ -1,11 +1,9 @@
 const express = require("express");
 const mysql = require("mysql");
 const cors = require("cors");
-const Database = require('better-sqlite3');
-const mobileDb = new Database('./mobile_users.db');
-const http = require("http");
 const { json } = require("body-parser");
-const serverless = require("serverless-http");
+const Database = require('better-sqlite3');
+const mobileDb = new Database('./api/mobileusers.db');
 
 const app = express();
 
@@ -389,3 +387,4 @@ app.post("/api/mobileuser", (req, res) => {
 
 const serverless = require("serverless-http");
 module.exports.handler = serverless(app);
+
