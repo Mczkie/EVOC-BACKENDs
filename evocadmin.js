@@ -370,22 +370,6 @@ app.put("/api/collection/:id", async (req, res) => {
 });
 
 
-// Barangay East Bajac-Bajac Api connection
-app.get('/api/barangay/east-bajac-bajac', (req, res) => {
-    const barangayData = {
-        name: "Barangay East Bajac-Bajac",
-        city: "Olongapo City",
-        region: "Central Luzon (Region III)",
-        coordinates: {
-            latitude: 14.8429,
-            longitude: 120.2912
-        },
-        elevation_m: 15.3,
-        postal_code: "2200"
-    };
-    res.json(barangayData);
-});
-
 
 // sqlite connection 
 app.get("/api/mobileuser", (req, res) => {
