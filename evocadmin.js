@@ -27,6 +27,12 @@ app.use(
   })
 );
 
+// Handle preflight for all routes
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 // Body parser
 app.use(express.json());
 
