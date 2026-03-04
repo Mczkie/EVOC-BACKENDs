@@ -9,29 +9,27 @@ const app = express();
 
 // CORS
 const allowedOrigins = [
-  "http://localhost:3000", // local dev
-  "https://evocadmins-ht3awl35v-mc-peterson-mercaders-projects.vercel.app" // deployed React
+  "http://localhost:3000",
+  "https://evocadmins.vercel.app"
 ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, server-to-server)
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // allow server-to-server or Postman
       if (allowedOrigins.indexOf(origin) === -1) {
         return callback(new Error("CORS policy does not allow this origin"), false);
       }
       return callback(null, true);
     },
-    credentials: true, // allow cookies if needed
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allow these methods
+    allowedHeaders: ["Content-Type", "Authorization"], // allow these headers
   })
 );
 
-// Handle preflight for all routes
-app.options("*", cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+// Handle OPTIONS requests
+app.options("*", cors());
 
 // Body parser
 app.use(express.json());
