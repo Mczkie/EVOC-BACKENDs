@@ -50,7 +50,7 @@ pool.connect((err, client, release) => {
 });
 
 // LOGIN route
-app.post("https://evoc-backends.onrender.com/api/login", (req, res) => {
+app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
