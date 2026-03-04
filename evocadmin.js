@@ -411,6 +411,44 @@ app.post("/api/mobileuser", (req, res) => {
 });
 
 
+// TEMP: Create admin table and insert a user
+(async () => {
+  try {
+    // Create table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(100) NOT NULL,
+        role VARCHAR(50) NOT NULL
+      )
+    `);
+    console.log("Admin table ensured");
+
+    // Insert a sample admin user (change email/password as you like)
+    const email = "admin@example.com";
+    const password = "123456";
+    const role = "superadmin";
+    const name = "Admin";
+
+    // Check if the user already exists
+    const check = await pool.query("SELECT * FROM admin WHERE email = $1", [email]);
+    if (check.rows.length === 0) {
+      await pool.query(
+        "INSERT INTO admin (name, email, password, role) VALUES ($1, $2, $3, $4)",
+        [name, email, password, role]
+      );
+      console.log("Sample admin user created");
+    } else {
+      console.log("Admin user already exists");
+    }
+  } catch (err) {
+    console.error("Error setting up admin table:", err);
+  }
+})();
+
+
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
