@@ -375,13 +375,43 @@ app.put("/api/collection/:id", async (req, res) => {
 
 
 // sqlite connection 
-app.get("/api/mobileuser", (req, res) => {
+app.get("/api/mobileuser", async (req, res) => {
   try {
-    const rows = mobileDb.prepare("SELECT id, name, email FROM users").all();
-    res.json(rows);
+    const result = await pool.query(
+      "SELECT id, name, email FROM mobile_users"
+    );
+
+    res.json(result.rows);
+
   } catch (err) {
-    console.error("DB error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching mobile users:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
+// Add a mobile user
+app.post("/api/mobileuser", async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Name, Email, Password required" });
+  }
+
+  try {
+    const query = `
+      INSERT INTO mobile_users (name, email, password)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, email
+    `;
+
+    const result = await pool.query(query, [name, email, password]);
+
+    res.status(201).json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Error inserting mobile user:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -396,102 +426,6 @@ app.get('/api/barangay/east-bajac-bajac', (req, res) => {
     };
     res.json(barangayData);
 });
-
-// Add a mobile user
-app.post("/api/mobileuser", (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: "Name, Email, Password required" });
-  }
-
-  try {
-    const stmt = mobileDb.prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-    const info = stmt.run(name, email, password);
-    res.status(201).json({ id: info.lastInsertRowid, name, email });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
-// TEMP: Create admin table and insert a user
-(async () => {
-  try {
-    // Create table if it doesn't exist
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS admin (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(100) NOT NULL,
-        email VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(100) NOT NULL,
-        role VARCHAR(50) NOT NULL
-      )
-    `);
-    console.log("Admin table ensured");
-
-    // Insert a sample admin user (change email/password as you like)
-    const email = "admin@example.com";
-    const password = "123456";
-    const role = "superadmin";
-    const name = "Admin";
-
-    // Check if the user already exists
-    const check = await pool.query("SELECT * FROM admin WHERE email = $1", [email]);
-    if (check.rows.length === 0) {
-      await pool.query(
-        "INSERT INTO admin (name, email, password, role) VALUES ($1, $2, $3, $4)",
-        [name, email, password, role]
-      );
-      console.log("Sample admin user created");
-    } else {
-      console.log("Admin user already exists");
-    }
-  } catch (err) {
-    console.error("Error setting up admin table:", err);
-  }
-})();
-
-// TEMP: create missing tables
-(async () => {
-  try {
-    // Reports table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS reports (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL
-      )
-    `);
-    console.log("Reports table ensured");
-
-    // Collection table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS collection (
-        id SERIAL PRIMARY KEY,
-        location VARCHAR(255) NOT NULL,
-        street VARCHAR(255) NOT NULL,
-        date DATE NOT NULL
-      )
-    `);
-    console.log("Collection table ensured");
-
-    // Announcement table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS announcement (
-        id SERIAL PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL,
-        time_stamp TIMESTAMP NOT NULL DEFAULT NOW()
-      )
-    `);
-    console.log("Announcement table ensured");
-
-    console.log("All missing tables created/verified!");
-  } catch (err) {
-    console.error("Error creating tables:", err);
-  }
-})();
-
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
