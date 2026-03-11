@@ -323,6 +323,85 @@ app.post("/api/collection", async (req, res) => {
   }
 });
 
+app.get("/api/fixedschedule", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM fixed_schedule ORDER BY barangay ASC"
+    );
+
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("Error fetching fixed schedules:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.post("/api/fixedschedule", async (req, res) => {
+  const { barangay, schedule } = req.body;
+
+  if (!barangay || !schedule) {
+    return res.status(400).json({
+      message: "Barangay and Schedule are required"
+    });
+  }
+
+  try {
+    const query = `
+      INSERT INTO fixed_schedule (barangay, schedule)
+      VALUES ($1,$2)
+      RETURNING id, barangay, schedule
+    `;
+
+    const result = await pool.query(query, [barangay, schedule]);
+
+    res.status(201).json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Error adding fixed schedule:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/fixedschedule/:id", async (req, res) => {
+  const { id } = req.params;
+  const { barangay, schedule } = req.body;
+
+  try {
+    const query = `
+      UPDATE fixed_schedule
+      SET barangay=$1, schedule=$2
+      WHERE id=$3
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [barangay, schedule, id]);
+
+    res.json(result.rows[0]);
+
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.delete("/api/fixedschedule/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query(
+      "DELETE FROM fixed_schedule WHERE id=$1",
+      [id]
+    );
+
+    res.json({ message: "Schedule deleted successfully" });
+
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete collection route
 app.delete("/api/collection", async (req, res) => {
   const { id } = req.body;
