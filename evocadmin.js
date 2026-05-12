@@ -59,9 +59,6 @@ pool.connect((err, client, release) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password)
-    return res.status(400).json({ message: "Email and Password required" });
-
   try {
     const result = await pool.query(
       "SELECT id, name, email FROM admin WHERE email = $1 AND password = $2",
@@ -71,14 +68,14 @@ app.post("/api/login", async (req, res) => {
     if (result.rows.length > 0) {
       return res.status(200).json({
         message: "Login successful!",
-        user: result.rows[0]   // ✅ THIS IS THE IMPORTANT PART
+        user: result.rows[0]   // 🔥 MUST EXIST
       });
-    } else {
-      return res.status(401).json({ message: "Invalid credentials" });
     }
+
+    return res.status(401).json({ message: "Invalid credentials" });
+
   } catch (err) {
-    console.error("Postgres login error:", err);
-    return res.status(500).json({ message: "Database error", error: err.message });
+    return res.status(500).json({ message: err.message });
   }
 });
 
