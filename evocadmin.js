@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const Database = require('better-sqlite3');
-const mobileDb = new Database('./api/mobile_users.db');
+const Database = require("better-sqlite3");
+const mobileDb = new Database("./api/mobile_users.db");
 const { Pool } = require("pg");
 const { json } = require("body-parser");
 
@@ -10,7 +10,7 @@ const app = express();
 // CORS
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://evocadmins.vercel.app"
+  "https://evocadmins.vercel.app",
 ];
 
 app.use(
@@ -18,14 +18,17 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true); // allow server-to-server or Postman
       if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error("CORS policy does not allow this origin"), false);
+        return callback(
+          new Error("CORS policy does not allow this origin"),
+          false,
+        );
       }
       return callback(null, true);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allow these methods
     allowedHeaders: ["Content-Type", "Authorization"], // allow these headers
-  })
+  }),
 );
 
 // Handle OPTIONS requests
@@ -36,22 +39,24 @@ app.use(express.json());
 
 // MySQL connection
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgresql://evocadmin_database_user:7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc@dpg-d81jrb8g4nts738567tg-a.oregon-postgres.render.com/evocadmin_database", // e.g., evocapp-postgres.onrender.com
+  connectionString:
+    process.env.DATABASE_URL ||
+    "postgresql://evocadmin_database_user:7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc@dpg-d81jrb8g4nts738567tg-a.oregon-postgres.render.com/evocadmin_database", // e.g., evocapp-postgres.onrender.com
   user: process.env.PGUSER || "evocadmin_database_user",
   password: process.env.PGPASSWORD || "7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc",
   database: process.env.PGDATABASE || "evocadmin_database",
   port: process.env.PGPORT || 5432, // PostgreSQL default port
   ssl: {
-    rejectUnauthorized: false
-  }
+    rejectUnauthorized: false,
+  },
 });
 
 // Test connection
 pool.connect((err, client, release) => {
   if (err) {
-    return console.error('Postgres connection error', err.stack);
+    return console.error("Postgres connection error", err.stack);
   }
-  console.log('Postgres connected successfully!');
+  console.log("Postgres connected successfully!");
   release();
 });
 
@@ -61,19 +66,18 @@ app.post("/api/login", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT id, name, email FROM admin WHERE email = $1 AND password = $2",
-      [email, password]
+      "SELECT id, name, email, role FROM admin WHERE email = $1 AND password = $2",
+      [email, password],
     );
 
     if (result.rows.length > 0) {
       return res.status(200).json({
         message: "Login successful!",
-        user: result.rows[0]   // 🔥 MUST EXIST
+        user: result.rows[0], // 🔥 MUST EXIST
       });
     }
 
     return res.status(401).json({ message: "Invalid credentials" });
-
   } catch (err) {
     return res.status(500).json({ message: err.message });
   }
@@ -91,7 +95,7 @@ app.get("/api/Dashboard", async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT * FROM admin WHERE email = $1 AND password = $2",
-      [email, password]
+      [email, password],
     );
 
     if (result.rows.length > 0) {
@@ -103,7 +107,9 @@ app.get("/api/Dashboard", async (req, res) => {
     }
   } catch (err) {
     console.error("Postgres dashboard error:", err);
-    return res.status(500).json({ message: "Database query failed", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Database query failed", error: err.message });
   }
 });
 
@@ -136,13 +142,15 @@ app.post("/api/admin", async (req, res) => {
   try {
     const result = await pool.query(
       "INSERT INTO admin (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role",
-      [name, email, password, role]
+      [name, email, password, role],
     );
 
     res.status(201).json(result.rows[0]); // Return the newly inserted user
   } catch (err) {
     console.error("Postgres insert error:", err);
-    res.status(500).json({ message: "Failed to add new admin", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to add new admin", error: err.message });
   }
 });
 
@@ -153,7 +161,9 @@ app.get("/api/users", async (req, res) => {
     res.status(200).json(result.rows); // PostgreSQL returns rows
   } catch (err) {
     console.error("Error fetching users:", err);
-    res.status(500).json({ message: "Failed to fetch users", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch users", error: err.message });
   }
 });
 
@@ -166,20 +176,26 @@ app.delete("/api/users", async (req, res) => {
   }
 
   try {
-    const result = await pool.query("DELETE FROM admin WHERE id = $1 RETURNING id", [id]);
+    const result = await pool.query(
+      "DELETE FROM admin WHERE id = $1 RETURNING id",
+      [id],
+    );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({ message: "User deleted successfully", deletedId: result.rows[0].id });
+    res.status(200).json({
+      message: "User deleted successfully",
+      deletedId: result.rows[0].id,
+    });
   } catch (err) {
     console.error("Error deleting user:", err);
-    res.status(500).json({ message: "Failed to delete user", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete user", error: err.message });
   }
 });
-
-
 
 // Fetch all reports
 app.get("/api/reports", async (req, res) => {
@@ -188,7 +204,9 @@ app.get("/api/reports", async (req, res) => {
     res.status(200).json(result.rows); // PostgreSQL returns rows
   } catch (err) {
     console.error("Error fetching reports:", err);
-    res.status(500).json({ message: "Failed to fetch reports", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch reports", error: err.message });
   }
 });
 
@@ -197,21 +215,24 @@ app.post("/api/reports", async (req, res) => {
   const { title, description } = req.body;
 
   if (!title || !description) {
-    return res.status(400).json({ message: "Title and description are required!" });
+    return res
+      .status(400)
+      .json({ message: "Title and description are required!" });
   }
 
   try {
-    const query = "INSERT INTO reports (title, description) VALUES ($1, $2) RETURNING id, title, description";
+    const query =
+      "INSERT INTO reports (title, description) VALUES ($1, $2) RETURNING id, title, description";
     const result = await pool.query(query, [title, description]);
 
     res.status(201).json(result.rows[0]); // Return the inserted report
   } catch (err) {
     console.error("Error adding report:", err);
-    res.status(500).json({ message: "Failed to submit report", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to submit report", error: err.message });
   }
 });
-
-
 
 // Delete report route
 app.delete("/api/reports", async (req, res) => {
@@ -229,7 +250,9 @@ app.delete("/api/reports", async (req, res) => {
     res.status(200).json({ message: "Report deleted successfully" });
   } catch (err) {
     console.error("Error deleting report:", err);
-    res.status(500).json({ message: "Failed to delete report", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete report", error: err.message });
   }
 });
 
@@ -241,10 +264,11 @@ app.get("/api/announcement", async (req, res) => {
     res.status(200).json(result.rows);
   } catch (err) {
     console.error("Error fetching announcements:", err);
-    res.status(500).json({ message: "Failed to fetch announcements", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch announcements", error: err.message });
   }
 });
-
 
 // Add announcement route
 app.post("/api/announcement", async (req, res) => {
@@ -267,7 +291,9 @@ app.post("/api/announcement", async (req, res) => {
     res.status(200).json(result.rows[0]);
   } catch (err) {
     console.error("Failed to submit announcement:", err);
-    res.status(500).send({ message: "Failed to submit announcement", error: err.message });
+    res
+      .status(500)
+      .send({ message: "Failed to submit announcement", error: err.message });
   }
 });
 
@@ -287,10 +313,11 @@ app.delete("/api/announcement", async (req, res) => {
     res.status(200).json({ message: "Announcement deleted successfully" });
   } catch (err) {
     console.error("Failed to delete announcement:", err);
-    res.status(500).json({ message: "Failed to delete announcement", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete announcement", error: err.message });
   }
 });
-
 
 // Get collection route
 app.get("/api/collection", async (req, res) => {
@@ -299,7 +326,9 @@ app.get("/api/collection", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Failed to fetch collection:", err);
-    res.status(500).send({ message: "Failed to fetch collection", error: err.message });
+    res
+      .status(500)
+      .send({ message: "Failed to fetch collection", error: err.message });
   }
 });
 
@@ -324,18 +353,19 @@ app.post("/api/collection", async (req, res) => {
     res.status(200).json(result.rows[0]);
   } catch (err) {
     console.error("Failed to submit collection:", err);
-    res.status(500).send({ message: "Failed to submit collection", error: err.message });
+    res
+      .status(500)
+      .send({ message: "Failed to submit collection", error: err.message });
   }
 });
 
 app.get("/api/fixedschedule", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM fixed_schedule ORDER BY barangay ASC"
+      "SELECT * FROM fixed_schedule ORDER BY barangay ASC",
     );
 
     res.json(result.rows);
-
   } catch (err) {
     console.error("Error fetching fixed schedules:", err);
     res.status(500).json({ message: err.message });
@@ -347,7 +377,7 @@ app.post("/api/fixedschedule", async (req, res) => {
 
   if (!barangay || !schedule) {
     return res.status(400).json({
-      message: "Barangay and Schedule are required"
+      message: "Barangay and Schedule are required",
     });
   }
 
@@ -361,7 +391,6 @@ app.post("/api/fixedschedule", async (req, res) => {
     const result = await pool.query(query, [barangay, schedule]);
 
     res.status(201).json(result.rows[0]);
-
   } catch (err) {
     console.error("Error adding fixed schedule:", err);
     res.status(500).json({ message: err.message });
@@ -383,7 +412,6 @@ app.put("/api/fixedschedule/:id", async (req, res) => {
     const result = await pool.query(query, [barangay, schedule, id]);
 
     res.json(result.rows[0]);
-
   } catch (err) {
     console.error("Update error:", err);
     res.status(500).json({ message: err.message });
@@ -394,13 +422,9 @@ app.delete("/api/fixedschedule/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    await pool.query(
-      "DELETE FROM fixed_schedule WHERE id=$1",
-      [id]
-    );
+    await pool.query("DELETE FROM fixed_schedule WHERE id=$1", [id]);
 
     res.json({ message: "Schedule deleted successfully" });
-
   } catch (err) {
     console.error("Delete error:", err);
     res.status(500).json({ message: err.message });
@@ -456,23 +480,17 @@ app.put("/api/collection/:id", async (req, res) => {
   }
 });
 
-
-
-// sqlite connection 
+// sqlite connection
 app.get("/api/mobileuser", async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT id, name, email FROM mobile_users"
-    );
+    const result = await pool.query("SELECT id, name, email FROM mobile_users");
 
     res.json(result.rows);
-
   } catch (err) {
     console.error("Error fetching mobile users:", err);
     res.status(500).json({ message: err.message });
   }
 });
-
 
 // Add a mobile user
 app.post("/api/mobileuser", async (req, res) => {
@@ -492,23 +510,22 @@ app.post("/api/mobileuser", async (req, res) => {
     const result = await pool.query(query, [name, email, password]);
 
     res.status(201).json(result.rows[0]);
-
   } catch (err) {
     console.error("Error inserting mobile user:", err);
     res.status(500).json({ message: err.message });
   }
 });
 
-app.get('/api/barangay/east-bajac-bajac', (req, res) => {
-    const barangayData = {
-        name: "Barangay East Bajac-Bajac",
-        city: "Olongapo City",
-        region: "Central Luzon (Region III)",
-        coordinates: { latitude: 14.8429, longitude: 120.2912 },
-        elevation_m: 15.3,
-        postal_code: "2200"
-    };
-    res.json(barangayData);
+app.get("/api/barangay/east-bajac-bajac", (req, res) => {
+  const barangayData = {
+    name: "Barangay East Bajac-Bajac",
+    city: "Olongapo City",
+    region: "Central Luzon (Region III)",
+    coordinates: { latitude: 14.8429, longitude: 120.2912 },
+    elevation_m: 15.3,
+    postal_code: "2200",
+  };
+  res.json(barangayData);
 });
 
 const PORT = process.env.PORT || 5001;
