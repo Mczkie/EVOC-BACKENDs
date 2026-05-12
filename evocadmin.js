@@ -36,11 +36,14 @@ app.use(express.json());
 
 // MySQL connection
 const pool = new Pool({
-  host: process.env.PGHOST || "dpg-d6k3br9aae7s7388rro0-a", // e.g., evocapp-postgres.onrender.com
-  user: process.env.PGUSER || "evocdatabase_postgres_user",
-  password: process.env.PGPASSWORD || "sKI0CTPWsSxfDXLohMBIPkmyKIHg3caP",
-  database: process.env.PGDATABASE || "evocdatabase_postgres",
+  connectionString: process.env.DATABASE_URL || "postgresql://evocadmin_database_user:7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc@dpg-d81jrb8g4nts738567tg-a.oregon-postgres.render.com/evocadmin_database", // e.g., evocapp-postgres.onrender.com
+  user: process.env.PGUSER || "evocadmin_database_user",
+  password: process.env.PGPASSWORD || "7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc",
+  database: process.env.PGDATABASE || "evocadmin_database",
   port: process.env.PGPORT || 5432, // PostgreSQL default port
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Test connection
