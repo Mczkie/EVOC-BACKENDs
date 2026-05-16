@@ -362,7 +362,7 @@ app.post("/api/collection", async (req, res) => {
 app.get("/api/fixedschedule", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM fixed_schedule ORDER BY barangay ASC",
+      "SELECT * FROM fixed_schedule ORDER BY date ASC, time ASC",
     );
 
     res.json(result.rows);
@@ -373,22 +373,28 @@ app.get("/api/fixedschedule", async (req, res) => {
 });
 
 app.post("/api/fixedschedule", async (req, res) => {
-  const { barangay, schedule } = req.body;
+  const { barangay, collection_type, date, time, title } = req.body;
 
-  if (!barangay || !schedule) {
-    return res.status(400).json({
-      message: "Barangay and Schedule are required",
-    });
-  }
+  if (!barangay || !collection_type || !date || !time) {
+  return res.status(400).json({
+    message: "Barangay, collection type, date, and time are required",
+  });
+}
 
   try {
     const query = `
-      INSERT INTO fixed_schedule (barangay, schedule)
-      VALUES ($1,$2)
-      RETURNING id, barangay, schedule
+      INSERT INTO fixed_schedule (barangay, collection_type, date, time, title)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
     `;
 
-    const result = await pool.query(query, [barangay, schedule]);
+    const result = await pool.query(query, [
+      barangay,
+      collectionType,
+      date,
+      time,
+      title,
+    ]);
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -399,17 +405,28 @@ app.post("/api/fixedschedule", async (req, res) => {
 
 app.put("/api/fixedschedule/:id", async (req, res) => {
   const { id } = req.params;
-  const { barangay, schedule } = req.body;
+  const { barangay, collectionType, date, time, title } = req.body;
 
   try {
     const query = `
       UPDATE fixed_schedule
-      SET barangay=$1, schedule=$2
-      WHERE id=$3
+      SET barangay=$1,
+          collection_type=$2,
+          date=$3,
+          time=$4,
+          title=$5
+      WHERE id=$6
       RETURNING *
     `;
 
-    const result = await pool.query(query, [barangay, schedule, id]);
+    const result = await pool.query(query, [
+      barangay,
+      collectionType,
+      date,
+      time,
+      title,
+      id,
+    ]);
 
     res.json(result.rows[0]);
   } catch (err) {
