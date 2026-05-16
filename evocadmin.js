@@ -373,13 +373,13 @@ app.get("/api/fixedschedule", async (req, res) => {
 });
 
 app.post("/api/fixedschedule", async (req, res) => {
-  const { barangay, collection_type, date, time, title } = req.body;
+  const { barangay, collectionType, date, time, title } = req.body;
 
-  if (!barangay || !collection_type || !date || !time) {
-  return res.status(400).json({
-    message: "Barangay, collection type, date, and time are required",
-  });
-}
+  if (!barangay || !collectionType || !date || !time) {
+    return res.status(400).json({
+      message: "Barangay, collection type, date, and time are required",
+    });
+  }
 
   try {
     const query = `
@@ -393,7 +393,7 @@ app.post("/api/fixedschedule", async (req, res) => {
       collectionType,
       date,
       time,
-      title,
+      title || null,
     ]);
 
     res.status(201).json(result.rows[0]);
