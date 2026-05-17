@@ -272,13 +272,19 @@ app.get("/api/announcement", async (req, res) => {
 
 // Add announcement route
 app.post("/api/announcement", async (req, res) => {
-  const { title, description, time_stamp } = req.body;
+  const { title, description } = req.body;
 
-  if (!title || !description || !time_stamp) {
+  if (!title || !description) {
     return res
       .status(400)
-      .send({ message: "Title, description, and timestamp are required" });
+      .send({ message: "Title and description are required" });
   }
+
+  // 🔥 AUTO GENERATE TIME HERE
+  const time_stamp = new Date()
+    .toISOString()
+    .slice(0, 19)
+    .replace("T", " ");
 
   try {
     const query = `
@@ -286,14 +292,20 @@ app.post("/api/announcement", async (req, res) => {
       VALUES ($1, $2, $3)
       RETURNING id, title, description, time_stamp
     `;
-    const result = await pool.query(query, [title, description, time_stamp]);
+
+    const result = await pool.query(query, [
+      title,
+      description,
+      time_stamp,
+    ]);
 
     res.status(200).json(result.rows[0]);
   } catch (err) {
     console.error("Failed to submit announcement:", err);
-    res
-      .status(500)
-      .send({ message: "Failed to submit announcement", error: err.message });
+    res.status(500).send({
+      message: "Failed to submit announcement",
+      error: err.message,
+    });
   }
 });
 
