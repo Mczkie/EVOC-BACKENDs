@@ -309,6 +309,30 @@ app.post("/api/announcement", async (req, res) => {
   }
 });
 
+app.put("/api/announcement/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, description } = req.body;
+
+  try {
+    const query = `
+      UPDATE announcement
+      SET title=$1, description=$2
+      WHERE id=$3
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      title,
+      description,
+      id,
+    ]);
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Delete announcement route
 app.delete("/api/announcement", async (req, res) => {
   const { id } = req.body;
