@@ -595,65 +595,44 @@ app.get("/api/barangay/:id", async (req, res) => {
 });
 
 app.put("/api/barangay/:id", async (req, res) => {
-  // 1. Force the ID to be a Base-10 Integer
-  const id = parseInt(req.params.id, 10); 
+  const id = parseInt(req.params.id, 10);
   const body = req.body;
 
-  console.log("UPDATE PAYLOAD RECEIVED:", body);
+  const safeInt = (val) => {
+    const n = parseInt(val, 10);
+    return isNaN(n) ? 0 : n;
+  };
 
-  if (isNaN(id)) {
-    return res.status(400).json({ message: "Invalid Barangay ID format" });
-  }
+  const result = await pool.query(
+    `UPDATE barangay
+     SET name=$1,
+         captain=$2,
+         population=$3,
+         households=$4,
+         area=$5,
+         address=$6,
+         collectors=$7,
+         vehicles=$8,
+         phone=$9,
+         email=$10
+     WHERE id=$11
+     RETURNING *`,
+    [
+      body.name,
+      body.captain,
+      safeInt(body.population),
+      safeInt(body.households),
+      body.area,
+      body.address,
+      safeInt(body.collectors),
+      safeInt(body.vehicles),
+      body.phone,
+      body.email,
+      id,
+    ]
+  );
 
-  try {
-    // 2. Sanitize and convert numeric values so Postgres doesn't reject them
-    const population = body.population ? parseInt(body.population, 10) : 0;
-    const households = body.households ? parseInt(body.households, 10) : 0;
-    const collectors = body.collectors ? parseInt(body.collectors, 10) : 0;
-    const vehicles = body.vehicles ? parseInt(body.vehicles, 10) : 0;
-
-    const result = await pool.query(
-      `UPDATE barangay
-       SET name=$1,
-           captain=$2,
-           population=$3,
-           households=$4,
-           area=$5,
-           address=$6,
-           collectors=$7,
-           vehicles=$8,
-           phone=$9,
-           email=$10
-       WHERE id=$11
-       RETURNING *`,
-      [
-        body.name,
-        body.captain,
-        population,
-        households,
-        body.area,
-        body.address,
-        collectors,
-        vehicles,
-        body.phone,
-        body.email,
-        id, // Passed as a verified integer
-      ]
-    );
-
-    // 3. Check if any row was actually found and altered
-    if (result.rows.length === 0) {
-      console.log(`⚠️ Warning: No barangay found with ID ${id}`);
-      return res.status(404).json({ message: `No barangay found with ID ${id}. Zero rows updated.` });
-    }
-
-    console.log("Database updated successfully:", result.rows[0]);
-    res.json(result.rows[0]);
-    
-  } catch (err) {
-    console.error("Postgres Error details:", err.message);
-    res.status(500).json({ message: "Database save failed", error: err.message });
-  }
+  return res.json(result.rows[0]);
 });
 
 const PORT = process.env.PORT || 5001;
