@@ -594,7 +594,7 @@ app.get("/api/barangay/:id", async (req, res) => {
   }
 });
 
-aapp.put("/api/barangay/:id", async (req, res) => {
+app.put("/api/barangay/:id", async (req, res) => {
   const { id } = req.params;
   const body = req.body;
 
