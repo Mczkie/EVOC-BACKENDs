@@ -570,6 +570,48 @@ app.post("/api/mobileuser", async (req, res) => {
 });
 
 // barangay profiles
+app.post("/api/barangay", async (req, res) => {
+  const {
+    name,
+    captain,
+    population,
+    households,
+    area,
+    address,
+    collectors,
+    vehicles,
+    phone,
+    email,
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO barangay
+       (name, captain, population, households, area, address, collectors, vehicles, phone, email)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+       RETURNING *`,
+      [
+        name,
+        captain,
+        population,
+        households,
+        area,
+        address,
+        collectors,
+        vehicles,
+        phone,
+        email,
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 app.get("/api/barangay", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM barangay ORDER BY id ASC");
