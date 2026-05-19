@@ -569,16 +569,73 @@ app.post("/api/mobileuser", async (req, res) => {
   }
 });
 
-app.get("/api/barangay/east-bajac-bajac", (req, res) => {
-  const barangayData = {
-    name: "Barangay East Bajac-Bajac",
-    city: "Olongapo City",
-    region: "Central Luzon (Region III)",
-    coordinates: { latitude: 14.8429, longitude: 120.2912 },
-    elevation_m: 15.3,
-    postal_code: "2200",
-  };
-  res.json(barangayData);
+// barangay profiles
+app.get("/api/barangay", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM barangay ORDER BY id ASC");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.get("/api/barangay/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM barangay WHERE id = $1",
+      [id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/barangay/:id", async (req, res) => {
+  const { id } = req.params;
+  const {
+    name,
+    captain,
+    population,
+    households,
+    area,
+    address,
+    collectors,
+    vehicles,
+    phone,
+    email,
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `UPDATE barangay
+       SET name=$1, captain=$2, population=$3, households=$4,
+           area=$5, address=$6, collectors=$7, vehicles=$8,
+           phone=$9, email=$10
+       WHERE id=$11
+       RETURNING *`,
+      [
+        name,
+        captain,
+        population,
+        households,
+        area,
+        address,
+        collectors,
+        vehicles,
+        phone,
+        email,
+        id,
+      ]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 const PORT = process.env.PORT || 5001;
