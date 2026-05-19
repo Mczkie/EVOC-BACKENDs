@@ -594,46 +594,45 @@ app.get("/api/barangay/:id", async (req, res) => {
   }
 });
 
-app.put("/api/barangay/:id", async (req, res) => {
+aapp.put("/api/barangay/:id", async (req, res) => {
   const { id } = req.params;
-  const {
-    name,
-    captain,
-    population,
-    households,
-    area,
-    address,
-    collectors,
-    vehicles,
-    phone,
-    email,
-  } = req.body;
+  const body = req.body;
+
+  console.log("UPDATE PAYLOAD:", body);
 
   try {
     const result = await pool.query(
       `UPDATE barangay
-       SET name=$1, captain=$2, population=$3, households=$4,
-           area=$5, address=$6, collectors=$7, vehicles=$8,
-           phone=$9, email=$10
+       SET name=$1,
+           captain=$2,
+           population=$3,
+           households=$4,
+           area=$5,
+           address=$6,
+           collectors=$7,
+           vehicles=$8,
+           phone=$9,
+           email=$10
        WHERE id=$11
        RETURNING *`,
       [
-        name,
-        captain,
-        population,
-        households,
-        area,
-        address,
-        collectors,
-        vehicles,
-        phone,
-        email,
+        body.name,
+        body.captain,
+        body.population,
+        body.households,
+        body.area,
+        body.address,
+        body.collectors,
+        body.vehicles,
+        body.phone,
+        body.email,
         id,
       ]
     );
 
     res.json(result.rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
