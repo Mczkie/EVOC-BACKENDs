@@ -4,8 +4,19 @@ const Database = require("better-sqlite3");
 const mobileDb = new Database("./api/mobile_users.db");
 const { Pool } = require("pg");
 const { json } = require("body-parser");
+import multer from "multer";
 
 const app = express();
+
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+app.use("/uploads", express.static("uploads"));
+const upload = multer({ storage });
 
 // CORS
 const allowedOrigins = [
@@ -271,16 +282,15 @@ app.get("/api/announcement", async (req, res) => {
 });
 
 // Add announcement route
-app.post("/api/announcement", async (req, res) => {
+app.post("/api/announcement", upload.single("image"), async (req, res) => {
   const { title, description } = req.body;
 
   if (!title || !description) {
-    return res
-      .status(400)
-      .send({ message: "Title and description are required" });
+    return res.status(400).json({ message: "Title and description required" });
   }
 
-  // 🔥 AUTO GENERATE TIME HERE
+  const image = req.file ? `/uploads/${req.file.filename}` : null;
+
   const time_stamp = new Date()
     .toISOString()
     .slice(0, 19)
@@ -288,24 +298,21 @@ app.post("/api/announcement", async (req, res) => {
 
   try {
     const query = `
-      INSERT INTO announcement (title, description, time_stamp)
-      VALUES ($1, $2, $3)
-      RETURNING id, title, description, time_stamp
+      INSERT INTO announcement (title, description, image, time_stamp)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
     `;
 
     const result = await pool.query(query, [
       title,
       description,
+      image,
       time_stamp,
     ]);
 
-    res.status(200).json(result.rows[0]);
+    res.json(result.rows[0]);
   } catch (err) {
-    console.error("Failed to submit announcement:", err);
-    res.status(500).send({
-      message: "Failed to submit announcement",
-      error: err.message,
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
