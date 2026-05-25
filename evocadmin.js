@@ -555,9 +555,9 @@ app.get("/api/mobileuser", async (req, res) => {
 
 //// Add a mobile user
 app.post("/api/mobileuser", async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, role, location } = req.body;
 
-  if (!name || !email || !password) {
+  if (!name || !role || !location) {
     return res.status(400).json({
       message: "Name, Email, Password required"
     });
@@ -566,14 +566,14 @@ app.post("/api/mobileuser", async (req, res) => {
   try {
     const query = `
       INSERT INTO mobile_users
-      (name, email, password)
+      (name, role, location)
       VALUES ($1, $2, $3)
       RETURNING id, name, email
     `;
 
     const result = await pool.query(
       query,
-      [name, email, password]
+      [name, role, location]
     );
 
     res.status(201).json(
