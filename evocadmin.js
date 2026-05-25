@@ -577,7 +577,7 @@ app.post("/api/mobileuser", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.get("/mobile-users", async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT * FROM users"
