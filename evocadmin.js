@@ -553,40 +553,58 @@ app.get("/api/mobileuser", async (req, res) => {
   }
 });
 
-// Add a mobile user
+//// Add a mobile user
 app.post("/api/mobileuser", async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
-    return res.status(400).json({ message: "Name, Email, Password required" });
+    return res.status(400).json({
+      message: "Name, Email, Password required"
+    });
   }
 
   try {
     const query = `
-      INSERT INTO mobile_users (name, email, password)
+      INSERT INTO mobile_users
+      (name, email, password)
       VALUES ($1, $2, $3)
       RETURNING id, name, email
     `;
 
-    const result = await pool.query(query, [name, email, password]);
+    const result = await pool.query(
+      query,
+      [name, email, password]
+    );
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(
+      result.rows[0]
+    );
+
   } catch (err) {
-    console.error("Error inserting mobile user:", err);
-    res.status(500).json({ message: err.message });
+    console.error(
+      "Error inserting mobile user:",
+      err
+    );
+
+    res.status(500).json({
+      message: err.message
+    });
   }
 });
 
-app.get("/mobile-users", async (req, res) => {
+
+/// Fetch all mobile users
+app.get("/api/mobile-users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM users"
+      "SELECT * FROM mobile_users ORDER BY id DESC"
     );
 
     res.json(result.rows);
 
-  } catch(err) {
+  } catch (err) {
     console.log(err);
+
     res.status(500).json({
       error: err.message
     });
