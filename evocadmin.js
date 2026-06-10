@@ -31,21 +31,9 @@ const uploadFile = async (file) => {
   return data.publicUrl;
 };
 
-const imageUrl = await uploadFile(req.file)
-
-await db.query(
-  "INSERT INTO announcement (title, description, image) VALUES ($1, $2, $3)",
-  [title, description, imageUrl]
-)
-
-
-
-
-const app = express();
-
 
 app.use("/uploads", express.static("uploads"));
-const upload = multer({ storage });
+
 
 // CORS
 const allowedOrigins = [
