@@ -1,16 +1,20 @@
 
-const cors = require("cors");
-const Database = require("better-sqlite3");
-const mobileDb = new Database("./api/mobile_users.db");
-const { Pool } = require("pg");
-const { json } = require("body-parser");
-const multer = require("multer");
-import { createClient } from '@supabase/supabase-js'
+import express from "express";
+import cors from "cors";
+import multer from "multer";
+import Database from "better-sqlite3";
+import { Pool } from "pg";
+import { createClient } from "@supabase/supabase-js";
+
+const app = express();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
-)
+);
 
 const uploadFile = async (file) => {
   const fileName = `${Date.now()}-${file.originalname}`;
