@@ -1,20 +1,48 @@
-const express = require("express");
+
 const cors = require("cors");
 const Database = require("better-sqlite3");
 const mobileDb = new Database("./api/mobile_users.db");
 const { Pool } = require("pg");
 const { json } = require("body-parser");
 const multer = require("multer");
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+)
+
+const uploadFile = async (file) => {
+  const fileName = `${Date.now()}-${file.originalname}`;
+
+  const { error } = await supabase.storage
+    .from("announcements")
+    .upload(fileName, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("announcements")
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
+};
+
+const imageUrl = await uploadFile(req.file)
+
+await db.query(
+  "INSERT INTO announcement (title, description, image) VALUES ($1, $2, $3)",
+  [title, description, imageUrl]
+)
+
+
 
 
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
-});
 
 app.use("/uploads", express.static("uploads"));
 const upload = multer({ storage });
@@ -50,27 +78,16 @@ app.options("*", cors());
 app.use(express.json());
 
 // MySQL connection
+process.env.NODE_OPTIONS = "--dns-result-order=ipv4first";
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    "postgresql://evocadmin_database_user:7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc@dpg-d81jrb8g4nts738567tg-a.oregon-postgres.render.com/evocadmin_database", // e.g., evocapp-postgres.onrender.com
-  user: process.env.PGUSER || "evocadmin_database_user",
-  password: process.env.PGPASSWORD || "7FFoHJCX0RHHpyiSlwcB3ah7BL7Y4Roc",
-  database: process.env.PGDATABASE || "evocadmin_database",
-  port: process.env.PGPORT || 5432, // PostgreSQL default port
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+  max: 5,               // LIMIT connections (IMPORTANT)
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
-// Test connection
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error("Postgres connection error", err.stack);
-  }
-  console.log("Postgres connected successfully!");
-  release();
-});
+
 
 // LOGIN route
 app.post("/api/login", async (req, res) => {
@@ -290,14 +307,13 @@ app.post("/api/announcement", upload.single("image"), async (req, res) => {
     return res.status(400).json({ message: "Title and description required" });
   }
 
-  const image = req.file ? `/uploads/${req.file.filename}` : null;
-
-  const time_stamp = new Date()
-    .toISOString()
-    .slice(0, 19)
-    .replace("T", " ");
-
   try {
+    let imageUrl = null;
+
+    if (req.file) {
+      imageUrl = await uploadFile(req.file);
+    }
+
     const query = `
       INSERT INTO announcement (title, description, image, time_stamp)
       VALUES ($1, $2, $3, $4)
@@ -307,12 +323,13 @@ app.post("/api/announcement", upload.single("image"), async (req, res) => {
     const result = await pool.query(query, [
       title,
       description,
-      image,
-      time_stamp,
+      imageUrl,
+      new Date(),
     ]);
 
     res.json(result.rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -546,33 +563,24 @@ app.put("/api/collection/:id", async (req, res) => {
 //// Add a mobile user
 // Add mobile user
 app.post("/api/mobile-users", async (req, res) => {
-  const { name, role, location } = req.body;
+  console.log("Incoming mobile user:", req.body);
 
-  if (!name || !role || !location) {
-    return res.status(400).json({
-      message: "Name, Role, and Location are required",
-    });
-  }
+  const { name, role, location } = req.body;
 
   try {
     const result = await pool.query(
-      `
-      INSERT INTO mobile_users
-      (name, role, location)
-      VALUES ($1,$2,$3)
-      RETURNING *
-      `,
+      `INSERT INTO mobile_users (name, role, location)
+       VALUES ($1,$2,$3)
+       RETURNING *`,
       [name, role, location]
     );
 
-    res.status(201).json(result.rows[0]);
+    console.log("Inserted:", result.rows[0]);
 
+    res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error(err);
-
-    res.status(500).json({
-      message: err.message
-    });
+    res.status(500).json({ message: err.message });
   }
 });
 
@@ -723,4 +731,8 @@ app.delete("/api/barangay/:id", async (req, res) => {
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+pool.on("error", (err) => {
+  console.error("Unexpected Postgres error:", err);
 });
