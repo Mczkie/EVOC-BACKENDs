@@ -29,7 +29,7 @@ const uploadFile = async (file) => {
   if (error) throw error;
 
   const { data } = supabase.storage
-    .from("announcements")
+    .from("announcement")
     .getPublicUrl(fileName);
 
   return data.publicUrl;
