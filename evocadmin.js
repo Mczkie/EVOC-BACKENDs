@@ -50,30 +50,9 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      console.log("Origin:", origin);
 
-      if (!origin) return callback(null, true);
 
-      if (allowedOrigins.indexOf(origin) === -1) {
-        console.log("Blocked Origin:", origin);
 
-        return callback(
-          new Error("CORS policy does not allow this origin"),
-          false
-        );
-      }
-
-      callback(null, true);
-    },
-    credentials: true,
-  })
-);
-
-// Handle OPTIONS requests
-app.options("*", cors());
 
 // Body parser
 app.use(express.json());
@@ -83,10 +62,11 @@ process.env.NODE_OPTIONS = "--dns-result-order=ipv4first";
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 5,               // LIMIT connections (IMPORTANT)
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
 });
+
+pool.query("SELECT NOW()")
+  .then(() => console.log("✅ PostgreSQL Connected"))
+  .catch(err => console.error("❌ PostgreSQL Error:", err));
 
 
 
