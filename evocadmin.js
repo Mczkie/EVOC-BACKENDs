@@ -1,19 +1,24 @@
-
+import { createClient } from "@supabase/supabase-js";
 import express from "express";
 import cors from "cors";
 import Database from "better-sqlite3";
 import { Pool } from "pg";
-import { createClient } from "@supabase/supabase-js";
 
 import fs from "fs";
-import path from "path";
 import multer from "multer";
 
 const app = express();
 
-
 app.use("/uploads", express.static("uploads"));
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("❌ Missing Supabase env variables");
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // CORS
 const allowedOrigins = [
@@ -21,10 +26,12 @@ const allowedOrigins = [
   "https://evocadmins.vercel.app",
 ];
 
-app.use(cors({
-  origin: true,
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  }),
+);
 
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
@@ -36,50 +43,36 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    cb(
-      null,
-      `${Date.now()}-${file.originalname}`
-    );
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    cb(null, `${Date.now()}-${safeName}`);
   },
 });
 
 const upload = multer({
   storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024,
+  },
+
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/webp",
+      "video/mp4",
+      "video/quicktime",
+      "video/x-m4v",
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only images and videos are allowed"));
+    }
+  },
 });
-
-const uploadFile = async (file) => {
-  const safeName =
-    Date.now() +
-    "-" +
-    file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-  const { error } = await supabase.storage
-    .from("announcements")
-    .upload(safeName, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false,
-    });
-
-  if (error) throw error;
-
-  const { data } = supabase.storage
-    .from("announcements")
-    .getPublicUrl(safeName);
-
-  return data.publicUrl;
-};
-
-
-const BUCKET = "announcements";
-
-const { error } = await supabase.storage
-  .from(BUCKET)
-  .upload(fileName, file.buffer);
-
-const { data } = supabase.storage
-  .from(BUCKET)
-  .getPublicUrl(fileName);
-
 
 // Body parser
 app.use(express.json());
@@ -91,11 +84,10 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
-pool.query("SELECT NOW()")
+pool
+  .query("SELECT NOW()")
   .then(() => console.log("✅ PostgreSQL Connected"))
-  .catch(err => console.error("❌ PostgreSQL Error:", err));
-
-
+  .catch((err) => console.error("❌ PostgreSQL Error:", err));
 
 // LOGIN route
 app.post("/api/login", async (req, res) => {
@@ -308,65 +300,43 @@ app.get("/api/announcement", async (req, res) => {
 });
 
 // Add announcement route
-app.post(
-  "/api/announcement",
-  upload.single("image"),
-  async (req, res) => {
+app.post("/api/announcement", upload.single("image"), async (req, res) => {
+  const { title, description } = req.body;
 
-    const { title, description } = req.body;
-
-    if (!title || !description) {
-      return res.status(400).json({
-        message: "Title and description required",
-      });
-    }
-
-    try {
-
-      const imageUrl = req.file
-        ? `/uploads/${req.file.filename}`
-        : null;
-
-      const result = await pool.query(
-        `
-        INSERT INTO announcement
-        (
-          title,
-          description,
-          image,
-          time_stamp
-        )
-        VALUES
-        (
-          $1,
-          $2,
-          $3,
-          NOW()
-        )
-        RETURNING *
-        `,
-        [
-          title,
-          description,
-          imageUrl,
-        ]
-      );
-
-      res.status(201).json(
-        result.rows[0]
-      );
-
-    } catch (err) {
-
-      console.error(err);
-
-      res.status(500).json({
-        message: err.message,
-      });
-
-    }
+  if (!title || !description) {
+    return res.status(400).json({
+      message: "Title and description required",
+    });
   }
-);
+
+  try {
+    const mediaUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const result = await pool.query(
+      `
+  INSERT INTO announcement
+  (
+    title,
+    description,
+    media,
+    time_stamp
+  )
+  VALUES
+  ($1, $2, $3, NOW())
+  RETURNING *
+  `,
+      [title, description, mediaUrl],
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
 
 app.put("/api/announcement/:id", async (req, res) => {
   const { id } = req.params;
@@ -380,11 +350,7 @@ app.put("/api/announcement/:id", async (req, res) => {
       RETURNING *
     `;
 
-    const result = await pool.query(query, [
-      title,
-      description,
-      id,
-    ]);
+    const result = await pool.query(query, [title, description, id]);
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -592,8 +558,6 @@ app.put("/api/collection/:id", async (req, res) => {
   }
 });
 
-
-
 //// Add a mobile user
 // Add mobile user
 app.post("/api/mobile-users", async (req, res) => {
@@ -606,7 +570,7 @@ app.post("/api/mobile-users", async (req, res) => {
       `INSERT INTO mobile_users (name, role, location)
        VALUES ($1,$2,$3)
        RETURNING *`,
-      [name, role, location]
+      [name, role, location],
     );
 
     console.log("Inserted:", result.rows[0]);
@@ -618,19 +582,17 @@ app.post("/api/mobile-users", async (req, res) => {
   }
 });
 
-
 // Fetch users
 app.get("/api/mobile-users", async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM mobile_users ORDER BY id DESC"
+      "SELECT * FROM mobile_users ORDER BY id DESC",
     );
 
     res.json(result.rows);
-
-  } catch(err){
+  } catch (err) {
     res.status(500).json({
-      message: err.message
+      message: err.message,
     });
   }
 });
@@ -667,7 +629,7 @@ app.post("/api/barangay", async (req, res) => {
         vehicles,
         phone,
         email,
-      ]
+      ],
     );
 
     res.status(201).json(result.rows[0]);
@@ -676,7 +638,6 @@ app.post("/api/barangay", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 app.get("/api/barangay", async (req, res) => {
   try {
@@ -691,10 +652,9 @@ app.get("/api/barangay/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query(
-      "SELECT * FROM barangay WHERE id = $1",
-      [id]
-    );
+    const result = await pool.query("SELECT * FROM barangay WHERE id = $1", [
+      id,
+    ]);
 
     res.json(result.rows[0]);
   } catch (err) {
@@ -737,7 +697,7 @@ app.put("/api/barangay/:id", async (req, res) => {
       body.phone,
       body.email,
       id,
-    ]
+    ],
   );
 
   return res.json(result.rows[0]);
@@ -749,7 +709,7 @@ app.delete("/api/barangay/:id", async (req, res) => {
   try {
     const result = await pool.query(
       "DELETE FROM barangay WHERE id = $1 RETURNING *",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
