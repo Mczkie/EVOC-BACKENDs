@@ -47,8 +47,38 @@ const upload = multer({
   storage,
 });
 
+const uploadFile = async (file) => {
+  const safeName =
+    Date.now() +
+    "-" +
+    file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  const { error } = await supabase.storage
+    .from("announcements")
+    .upload(safeName, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage
+    .from("announcements")
+    .getPublicUrl(safeName);
+
+  return data.publicUrl;
+};
 
 
+const BUCKET = "announcements";
+
+const { error } = await supabase.storage
+  .from(BUCKET)
+  .upload(fileName, file.buffer);
+
+const { data } = supabase.storage
+  .from(BUCKET)
+  .getPublicUrl(fileName);
 
 
 // Body parser
