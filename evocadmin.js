@@ -45,6 +45,11 @@ const allowedOrigins = [
   "https://evocadmins.vercel.app",
 ];
 
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
+
 app.use(
   cors({
     origin: function (origin, callback) {
