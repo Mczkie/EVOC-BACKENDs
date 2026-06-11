@@ -50,23 +50,23 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // allow server-to-server or Postman
-      if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(
-          new Error("CORS policy does not allow this origin"),
-          false,
-        );
-      }
-      return callback(null, true);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allow these methods
-    allowedHeaders: ["Content-Type", "Authorization"], // allow these headers
-  }),
-);
+// app.use(
+//   cors({
+//     origin: function (origin, callback) {
+//       if (!origin) return callback(null, true); // allow server-to-server or Postman
+//       if (allowedOrigins.indexOf(origin) === -1) {
+//         return callback(
+//           new Error("CORS policy does not allow this origin"),
+//           false,
+//         );
+//       }
+//       return callback(null, true);
+//     },
+//     credentials: true,
+//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allow these methods
+//     allowedHeaders: ["Content-Type", "Authorization"], // allow these headers
+//   }),
+// );
 
 // Handle OPTIONS requests
 app.options("*", cors());
