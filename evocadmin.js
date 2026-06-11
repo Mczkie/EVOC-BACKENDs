@@ -39,11 +39,11 @@ const uploadFile = async (file) => {
 app.use("/uploads", express.static("uploads"));
 
 
-// // CORS
-// const allowedOrigins = [
-//   "http://localhost:3000",
-//   "https://evocadmins.vercel.app",
-// ];
+// CORS
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://evocadmins.vercel.app",
+];
 
 app.use(cors({
   origin: true,
