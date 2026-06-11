@@ -313,20 +313,20 @@ app.post("/api/announcement", upload.single("image"), async (req, res) => {
     const mediaUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
     const result = await pool.query(
-      `
+  `
   INSERT INTO announcement
   (
     title,
     description,
-    media,
+    image,
     time_stamp
   )
   VALUES
   ($1, $2, $3, NOW())
   RETURNING *
   `,
-      [title, description, mediaUrl],
-    );
+  [title, description, mediaUrl],
+);
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
