@@ -39,34 +39,38 @@ const uploadFile = async (file) => {
 app.use("/uploads", express.static("uploads"));
 
 
-// CORS
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://evocadmins.vercel.app",
-];
+// // CORS
+// const allowedOrigins = [
+//   "http://localhost:3000",
+//   "https://evocadmins.vercel.app",
+// ];
 
 app.use(cors({
   origin: true,
   credentials: true,
 }));
 
-// app.use(
-//   cors({
-//     origin: function (origin, callback) {
-//       if (!origin) return callback(null, true); // allow server-to-server or Postman
-//       if (allowedOrigins.indexOf(origin) === -1) {
-//         return callback(
-//           new Error("CORS policy does not allow this origin"),
-//           false,
-//         );
-//       }
-//       return callback(null, true);
-//     },
-//     credentials: true,
-//     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // allow these methods
-//     allowedHeaders: ["Content-Type", "Authorization"], // allow these headers
-//   }),
-// );
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      console.log("Origin:", origin);
+
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.indexOf(origin) === -1) {
+        console.log("Blocked Origin:", origin);
+
+        return callback(
+          new Error("CORS policy does not allow this origin"),
+          false
+        );
+      }
+
+      callback(null, true);
+    },
+    credentials: true,
+  })
+);
 
 // Handle OPTIONS requests
 app.options("*", cors());
